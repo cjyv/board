@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace = "ppppp">
+  
+  		<resultMap type="map" id="ssss">
+  			<result column="SEQ" property="seq"/>
+  			<result column="MEM_NAME" property="memName"/>
+  			<result column="MEM_ID" property="memId"/>
+  			<result column="BOARD_SUBJECT" property="boardSubject"/>
+  			<result column="BOARD_CONTENT" property="boardContent"/>
+  			<result column="REG_DATE" property="regDate"/>
+  			<result column="UPT_DATE" property="uptDate"/>
+  			<result column="VIEW_CNT" property="viewCnt"/>
+  		</resultMap>
+  		
+  		
+  		
+  
+  		<select id="boardList" resultMap="ssss" parameterType="map">
+  			select
+  				rnum
+  				,SEQ
+				,MEM_NAME
+				,MEM_ID
+				,BOARD_SUBJECT
+				,BOARD_CONTENT
+				,REG_DATE
+				,UPT_DATE
+				,VIEW_CNT
+			from (
+  			
+	  			
+	  			select
+	  				row_number() over(order by seq desc) rnum
+	  				,SEQ
+					,MEM_NAME
+					,MEM_ID
+					,BOARD_SUBJECT
+					,BOARD_CONTENT
+					,REG_DATE
+					,UPT_DATE
+					,VIEW_CNT
+				from board_study
+				where 1=1
+				<if test="searchType != null and searchType != ''">
+					and ${searchType} like '%'||#{searchTxt}||'%'
+				</if>
+				<if test="stDate != null and stDate != ''">
+					and to_char(reg_date, 'yyyy-MM-dd') between  #{stDate} and #{endDate}
+				</if>
+			)where rnum between (#{pageNo} * #{listSize}) - #{listSize} + 1 and #{pageNo} * #{listSize}
+  		</select>
+  		
+  		<select id="total" parameterType="map" resultType="int">
+  			select count(seq) from board_study
+  			where 1=1
+				<if test="searchType != null and searchType != ''">
+					and ${searchType} like '%'||#{searchTxt}||'%'
+				</if>
+				<if test="stDate != null and stDate != ''">
+					and to_char(reg_date, 'yyyy-MM-dd') between  #{stDate} and #{endDate}
+				</if>
+  		</select>
+  		<select id="maxSeq" resultType="int">
+  		select nvl(max(seq),0)+1 from board_study
+  		</select>
+  		
+  		<insert id="fileInsert" parameterType="map">
+  		
+  			insert into file_study_table 
+  			values (
+  				(select nvl(max(file_seq), 0)+1 from file_study_table)
+  				,#{REAL_NAME}
+  				,#{SAVE_NAME}
+  				,sysdate
+  				,#{SAVE_PATH}
+  				,#{LIST_SEQ}
+  			)
+  		
+  		</insert>
+  		
+  		<insert id="insert" parameterType="map">
+  			insert into board_study
+  			(
+  				SEQ
+				,MEM_NAME
+				,MEM_ID
+				,BOARD_SUBJECT
+				,BOARD_CONTENT
+				,REG_DATE
+				,VIEW_CNT
+  			)values(
+  				#{seq}
+				,#{name}
+				,#{id}
+				,#{subject}
+				,#{content}
+				,sysdate
+				,0
+  				
+  			)
+  			
+  		</insert>
+  		
+  		<select id="detail" resultMap="ssss">
+  		
+  			select
+  				SEQ
+				,MEM_NAME
+				,MEM_ID
+				,BOARD_SUBJECT
+				,BOARD_CONTENT
+				,REG_DATE
+				,UPT_DATE
+				,VIEW_CNT
+			from board_study
+			where seq = #{seq}
+  		</select>
+  		
+  		<delete id="delete" parameterType="integer">
+  			delete from board_study
+  			where seq in (
+  				<foreach collection="list" item="chk" separator=",">
+  					#{chk}
+  				</foreach>
+  			)
+  		
+  		</delete>
+  		<update id="update">
+  		update board_study set 
+				 MEM_NAME = #{name}
+				,MEM_ID = #{id}
+				,BOARD_SUBJECT = #{subject}
+				,BOARD_CONTENT = #{content}
+				,UPT_DATE = sysdate
+  				where seq = #{seq}
+  			
+  		</update>
+  		<select id="files" resultType="map" parameterType="int" >
+  		select REAL_NAME,SAVE_PATH,SAVE_NAME from file_study_table where LIST_SEQ =#{seq}
+  		
+  		</select>
+  		<delete id="filedelete"  parameterType="integer" >
+  		delete from file_study_table
+  		where list_seq in (
+  				<foreach collection="list" item="chk" separator=",">
+  					#{chk}
+  				</foreach>
+  			)
+  		
+  		</delete>
+  		<update id="count2">
+  		update board_study set
+  			VIEW_CNT=VIEW_CNT+1
+  			where seq = #{seq}
+  		</update>
+  		
+  </mapper>
